@@ -178,7 +178,7 @@ if __name__ == "__main__":
             cnn = WideResNet(depth=28, num_classes=num_classes, widen_factor=10,
                          dropRate=0.3)
 
-    cnn = cnn#.cuda()
+    cnn = cnn.cuda()
     criterion = nn.CrossEntropyLoss()#.cuda()
     cnn_optimizer = torch.optim.SGD(cnn.parameters(), lr=args.learning_rate,
                                 momentum=0.9, nesterov=True, weight_decay=5e-4)
@@ -201,8 +201,8 @@ if __name__ == "__main__":
         for i, (images, labels) in enumerate(progress_bar):
             progress_bar.set_description('Epoch ' + str(epoch))
 
-            images = images#.cuda()
-            labels = labels#.cuda()
+            images = images.cuda()
+            labels = labels.cuda()
 
             cnn.zero_grad()
             pred = cnn(images)
