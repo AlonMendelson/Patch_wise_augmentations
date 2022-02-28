@@ -84,6 +84,13 @@ if __name__ == "__main__":
         torch.cuda.manual_seed(args.seed)
 
     test_id = args.dataset + '_' + args.model
+    if args.patch_permutation:
+        test_id += '_patch-length_' + str(args.patch_length) + '_patch-permutation_' + str(args.permutation_prob)
+
+    if args.patch_transforms:
+        test_id += '_patch-transforms' + str(args.transform_prob)
+
+
 
     print(args)
 
@@ -100,7 +107,7 @@ if __name__ == "__main__":
         train_transform.transforms.append(transforms.RandomCrop(32, padding=4))
         train_transform.transforms.append(transforms.RandomHorizontalFlip())
     train_transform.transforms.append(transforms.ToTensor())
-    train_transform.transforms.append(normalize)
+    #train_transform.transforms.append(normalize)
     if args.patch_permutation or args.patch_transforms:
         train_transform.transforms.append(Patchwise_aug(args.patch_permutation,args.patch_transforms,args.permutation_prob
                                                     , args.transform_prob,args.patch_length))
@@ -179,7 +186,7 @@ if __name__ == "__main__":
                          dropRate=0.3)
 
     cnn = cnn.cuda()
-    criterion = nn.CrossEntropyLoss()#.cuda()
+    criterion = nn.CrossEntropyLoss().cuda()
     cnn_optimizer = torch.optim.SGD(cnn.parameters(), lr=args.learning_rate,
                                 momentum=0.9, nesterov=True, weight_decay=5e-4)
 
