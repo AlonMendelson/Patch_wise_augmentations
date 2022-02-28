@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
     filename = 'logs/' + test_id + '.csv'
     csv_logger = CSVLogger(args=args, fieldnames=['epoch', 'train_acc', 'test_acc'], filename=filename)
-
+    max_test_acc = 0
     for epoch in range(args.epochs):
 
         xentropy_loss_avg = 0.
@@ -230,6 +230,8 @@ if __name__ == "__main__":
             acc='%.3f' % accuracy)
 
         test_acc = test(test_loader)
+        if test_acc > max_test_acc:
+            max_test_acc = test_acc
         tqdm.write('test_acc: %.3f' % (test_acc))
 
         #scheduler.step(epoch)  # Use this line for PyTorch <1.4
@@ -237,7 +239,7 @@ if __name__ == "__main__":
 
         row = {'epoch': str(epoch), 'train_acc': str(accuracy), 'test_acc': str(test_acc)}
         csv_logger.writerow(row)
-
+    csv_logger.writerow({'max_test_acc':str(max_test_acc)})
     torch.save(cnn.state_dict(), 'checkpoints/' + test_id + '.pt')
     csv_logger.close()
 
