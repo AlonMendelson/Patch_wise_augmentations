@@ -114,8 +114,7 @@ if __name__ == "__main__":
 
 
     test_transform = transforms.Compose([
-    transforms.ToTensor(),
-    normalize])
+    transforms.ToTensor()])
 
     if args.dataset == 'cifar10':
         num_classes = 10
