@@ -2,6 +2,9 @@ import random
 
 import torch
 import numpy as np
+import torchvision
+from torchvision import transforms
+
 
 
 
@@ -34,10 +37,12 @@ class Patchwise_aug(object):
         num_patches = (w//self.length)*(h//self.length)
 
         patches = self.patchify_image(img,h,w)
+        if self.permute:
+            patches = self.permute_patches(patches,num_patches)
+        if self.transform:
+            patches = self.transform_patches(patches,num_patches)
 
-        permuted_patches = self.permute_patches(patches,num_patches)
-
-        img = self.assemble_image(h,w,permuted_patches)
+        img = self.assemble_image(h,w,patches)
 
         return img
 
@@ -71,6 +76,18 @@ class Patchwise_aug(object):
 
         img = torch.cat(rows,1)
         return img
+    def transform_patches(self,patches,num_patches):
+        auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.CIFAR10)
+        transform_boolean_array = (np.random.binomial(1, self.transform_prob, num_patches)).tolist()
+        for i in range(num_patches):
+            if transform_boolean_array[i]:
+                uint8_patch = torch.mul(patches[i],255)
+                uint8_patch = uint8_patch.type(torch.uint8)
+                uint8_patch = auto_augment(uint8_patch)
+                uint8_patch = uint8_patch.type(torch.float)
+                patches[i] = torch.div(uint8_patch,255)
+        return patches
+
 
 
 

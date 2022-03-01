@@ -240,6 +240,7 @@ if __name__ == "__main__":
         row = {'epoch': str(epoch), 'train_acc': str(accuracy), 'test_acc': str(test_acc)}
         csv_logger.writerow(row)
     row = {'epoch': str(args.epochs), 'train_acc': str(max_test_acc), 'test_acc': str(max_test_acc)}
+    csv_logger.writerow(row)
     torch.save(cnn.state_dict(), 'checkpoints/' + test_id + '.pt')
     csv_logger.close()
 
