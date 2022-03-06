@@ -37,10 +37,12 @@ class Patchwise_aug(object):
         num_patches = (w//self.length)*(h//self.length)
 
         patches = self.patchify_image(img,h,w)
-        if self.permute:
+        if self.permute and not self.transform:
             patches = self.permute_patches(patches,num_patches)
-        if self.transform:
+        if self.transform and not self.permute:
             patches = self.transform_patches(patches,num_patches)
+        if self.transform and self.permute:
+            patches = self.permute_transform_patches(patches,num_patches)
 
         img = self.assemble_image(h,w,patches)
 
@@ -87,6 +89,28 @@ class Patchwise_aug(object):
                 uint8_patch = uint8_patch.type(torch.float)
                 patches[i] = torch.div(uint8_patch,255)
         return patches
+
+    def permute_transform_patches(self,patches,num_patches):
+        auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.CIFAR10)
+        permute_boolean_array = (np.random.binomial(1,self.permutation_prob,num_patches)).tolist()
+        permuted_patches = [z[0] for z in zip ([i for i in range(num_patches)],permute_boolean_array) if z[1]==1]
+        permuted_patches_shuffled = permuted_patches.copy()
+        random.shuffle(permuted_patches_shuffled)
+        new_patches_list = []
+        for i in range(num_patches):
+            if i in permuted_patches:
+                index = permuted_patches.index(i)
+                patch_to_assign = patches[permuted_patches_shuffled[index]]
+                if np.random.rand() >= (1 - self.transform_prob):
+                    uint8_patch = torch.mul(patch_to_assign, 255)
+                    uint8_patch = uint8_patch.type(torch.uint8)
+                    uint8_patch = auto_augment(uint8_patch)
+                    uint8_patch = uint8_patch.type(torch.float)
+                    patch_to_assign = torch.div(uint8_patch, 255)
+            else:
+                patch_to_assign = patches[i]
+            new_patches_list.append(patch_to_assign)
+        return new_patches_list
 
 
 
