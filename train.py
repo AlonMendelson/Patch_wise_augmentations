@@ -16,9 +16,11 @@ from torch.optim.lr_scheduler import MultiStepLR
 
 from torchvision.utils import make_grid
 from torchvision import datasets, transforms
+import torchvision
 
 from util.misc import CSVLogger
 from util.patchwise_aug import Patchwise_aug
+from util.auto_aug import auto_aug
 
 from model.resnet import ResNet18
 from model.wide_resnet import WideResNet
@@ -45,7 +47,7 @@ def test(loader):
 
 if __name__ == "__main__":
     model_options = ['resnet18', 'wideresnet']
-    dataset_options = ['cifar10', 'cifar100', 'svhn']
+    dataset_options = ['cifar10', 'cifar100', 'svhn','imagenet']
 
     parser = argparse.ArgumentParser(description='CNN')
     parser.add_argument('--dataset', '-d', default='cifar10',
@@ -60,6 +62,8 @@ if __name__ == "__main__":
                     help='learning rate')
     parser.add_argument('--data_augmentation', action='store_true', default=False,
                     help='augment data by flipping and cropping')
+    parser.add_argument('--auto_augmentation', action='store_true', default=False,
+                    help='auto augment data')
     parser.add_argument('--patch_permutation', action='store_true', default=False,
                     help='apply patchwise_permutations')
     parser.add_argument('--patch_transforms', action='store_true', default=False,
@@ -107,6 +111,9 @@ if __name__ == "__main__":
         train_transform.transforms.append(transforms.RandomCrop(32, padding=4))
         train_transform.transforms.append(transforms.RandomHorizontalFlip())
     train_transform.transforms.append(transforms.ToTensor())
+    if args.auto_augmentation:
+        auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.CIFAR10)
+        train_transform.transforms.append(auto_aug(auto_augment))
     #train_transform.transforms.append(normalize)
     if args.patch_permutation or args.patch_transforms:
         train_transform.transforms.append(Patchwise_aug(args.patch_permutation,args.patch_transforms,args.permutation_prob
