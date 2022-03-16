@@ -112,7 +112,10 @@ if __name__ == "__main__":
         train_transform.transforms.append(transforms.RandomHorizontalFlip())
     train_transform.transforms.append(transforms.ToTensor())
     if args.auto_augmentation:
-        auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.CIFAR10)
+        if args.dataset == 'svhn':
+            auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.SVHN)
+        else:
+            auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.CIFAR10)
         train_transform.transforms.append(auto_aug(auto_augment))
     #train_transform.transforms.append(normalize)
     if args.patch_permutation or args.patch_transforms:
