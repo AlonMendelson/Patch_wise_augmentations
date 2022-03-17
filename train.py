@@ -7,6 +7,7 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import sys
+from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -24,6 +25,24 @@ from util.auto_aug import auto_aug
 
 from model.resnet import ResNet18
 from model.wide_resnet import WideResNet
+from shake_shake_pytorch.shake_shake import shake_net
+
+def _cosine_annealing(step, total_steps, lr_max, lr_min):
+    return lr_min + (lr_max -
+                     lr_min) * 0.5 * (1 + np.cos(step / total_steps * np.pi))
+
+def get_cosine_annealing_scheduler(optimizer, epochs, steps_per_epoch,lr_min,base_lr):
+    total_steps = epochs * steps_per_epoch
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer,
+        lr_lambda=lambda step: _cosine_annealing(
+            step,
+            total_steps,
+            1,  # since lr_lambda computes multiplicative factor
+            lr_min / base_lr))
+
+    return scheduler
 
 def test(loader):
     cnn.eval()    # Change model to 'eval' mode (BN uses moving mean/var).
@@ -46,7 +65,7 @@ def test(loader):
 
 
 if __name__ == "__main__":
-    model_options = ['resnet18', 'wideresnet']
+    model_options = ['resnet18', 'wideresnet','shake-shake']
     dataset_options = ['cifar10', 'cifar100', 'svhn','imagenet']
 
     parser = argparse.ArgumentParser(description='CNN')
@@ -193,16 +212,31 @@ if __name__ == "__main__":
         else:
             cnn = WideResNet(depth=28, num_classes=num_classes, widen_factor=10,
                          dropRate=0.3)
+    elif args.model == 'shake-shake':
+        model_config = OrderedDict([
+            ('arch', 'shake_shake'),
+            ('depth', 26),
+            ('base_channels', 96),
+            ('shake_forward', True),
+            ('shake_backward', True),
+            ('shake_image', True),
+            ('input_shape', (1, 3, 32, 32)),
+            ('n_classes', num_classes),
+        ])
+        cnn = shake_net(model_config)
 
     cnn = cnn.cuda()
     criterion = nn.CrossEntropyLoss().cuda()
     cnn_optimizer = torch.optim.SGD(cnn.parameters(), lr=args.learning_rate,
                                 momentum=0.9, nesterov=True, weight_decay=5e-4)
 
-    if args.dataset == 'svhn':
-        scheduler = MultiStepLR(cnn_optimizer, milestones=[80, 120], gamma=0.1)
+    if args.model == 'shake-shake':
+        scheduler = get_cosine_annealing_scheduler(cnn_optimizer,args.epochs,len(train_loader),0,args.learning_rate)
     else:
-        scheduler = MultiStepLR(cnn_optimizer, milestones=[60, 120, 160], gamma=0.2)
+        if args.dataset == 'svhn':
+            scheduler = MultiStepLR(cnn_optimizer, milestones=[80, 120], gamma=0.1)
+        else:
+            scheduler = MultiStepLR(cnn_optimizer, milestones=[60, 120, 160], gamma=0.2)
 
     filename = 'logs/' + test_id + '.csv'
     csv_logger = CSVLogger(args=args, fieldnames=['epoch', 'train_acc', 'test_acc'], filename=filename)
