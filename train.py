@@ -272,6 +272,8 @@ if __name__ == "__main__":
             progress_bar.set_postfix(
             xentropy='%.3f' % (xentropy_loss_avg / (i + 1)),
             acc='%.3f' % accuracy)
+            if(args.model == 'shake-shake'):
+                scheduler.step()
 
         test_acc = test(test_loader)
         if test_acc > max_test_acc:
@@ -279,7 +281,8 @@ if __name__ == "__main__":
         tqdm.write('test_acc: %.3f' % (test_acc))
 
         #scheduler.step(epoch)  # Use this line for PyTorch <1.4
-        scheduler.step()     # Use this line for PyTorch >=1.4
+        if (args.model != 'shake-shake'):
+            scheduler.step()     # Use this line for PyTorch >=1.4
 
         row = {'epoch': str(epoch), 'train_acc': str(accuracy), 'test_acc': str(test_acc)}
         csv_logger.writerow(row)
