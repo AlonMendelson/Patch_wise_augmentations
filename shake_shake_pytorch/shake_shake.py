@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from shake_shake_pytorch.functions.shake_shake_function import get_alpha_beta, shake_function
+from functions.shake_shake_function import get_alpha_beta, shake_function
 
 
 def initialize_weights(module):
@@ -105,7 +105,7 @@ class BasicBlock(nn.Module):
         return self.shortcut(x) + y
 
 
-class shake_net(nn.Module):
+class Network(nn.Module):
     def __init__(self, config):
         super().__init__()
 
