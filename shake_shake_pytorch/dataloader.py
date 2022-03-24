@@ -3,6 +3,7 @@ import torch
 import torchvision
 from util.patchwise_aug import Patchwise_aug
 from util.auto_aug import auto_aug
+from util.cutout import Cutout
 
 
 def get_loader(batch_size, num_workers, use_gpu):
@@ -15,8 +16,8 @@ def get_loader(batch_size, num_workers, use_gpu):
         torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.ToTensor(),
         auto_aug(auto_augment),
-        Patchwise_aug(True, False, 0.2
-                      , 0, 8)
+        #Patchwise_aug(True, False, 0.2, 0, 8),
+        Cutout(1,16)
         #torchvision.transforms.Normalize(mean, std),
 
     ])
