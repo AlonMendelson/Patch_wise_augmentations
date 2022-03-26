@@ -83,7 +83,7 @@ def parse_args():
         ('shake_backward', args.shake_backward),
         ('shake_image', args.shake_image),
         ('input_shape', (1, 3, 32, 32)),
-        ('n_classes', 10),
+        ('n_classes', 100),
     ])
 
     optim_config = OrderedDict([
