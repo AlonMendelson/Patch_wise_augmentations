@@ -42,6 +42,7 @@ def str2bool(s):
 
 
 def parse_args():
+    dataset_options = ['CIFAR10', 'CIFAR100']
     parser = argparse.ArgumentParser()
     # model config
     parser.add_argument('--depth', type=int, required=True)
@@ -50,12 +51,26 @@ def parse_args():
     parser.add_argument('--shake_forward', type=str2bool, default=True)
     parser.add_argument('--shake_backward', type=str2bool, default=True)
     parser.add_argument('--shake_image', type=str2bool, default=True)
+    parser.add_argument('--auto_augmentation', action='store_true', default=True,
+                    help='auto augment data')
+    parser.add_argument('--patch_permutation', action='store_true', default=True,
+                    help='apply patchwise_permutations')
+    parser.add_argument('--permutation_prob', type=float, default=0.2,
+                    help='probability of permutation')
+    parser.add_argument('--patch_transforms', action='store_true', default=False,
+                    help='apply patchwise_transforms')
+    parser.add_argument('--transform_prob', type=float, default=0.25,
+                    help='probability of transforms')
+    parser.add_argument('--patch_length', type=int, default=8,
+                    help='length of patches')
 
     # run config
     parser.add_argument('--outdir', type=str, required=True)
     parser.add_argument('--seed', type=int, default=17)
     parser.add_argument('--num_workers', type=int, default=7)
     parser.add_argument('--device', type=str, default='cuda')
+
+
 
     # optim config
     parser.add_argument('--epochs', type=int, default=1800)
@@ -65,6 +80,9 @@ def parse_args():
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--nesterov', type=str2bool, default=True)
     parser.add_argument('--lr_min', type=float, default=0)
+
+    #data_config
+    parser.add_argument('--dataset', '-d', default='CIFAR10')
 
     # TensorBoard
     parser.add_argument('--tensorboard',
@@ -84,6 +102,13 @@ def parse_args():
         ('shake_image', args.shake_image),
         ('input_shape', (1, 3, 32, 32)),
         ('n_classes', 100),
+        ('auto_augmentation',args.auto_augmentation),
+        ('patch_permutation',args.patch_permutation),
+        ('permutation_prob',args.permutation_prob),
+        ('patch_transforms',args.patch_transforms),
+        ('transform_prob',args.transform_prob),
+        ('patch_length',args.patch_length)
+
     ])
 
     optim_config = OrderedDict([
@@ -97,7 +122,7 @@ def parse_args():
     ])
 
     data_config = OrderedDict([
-        ('dataset', 'CIFAR10'),
+        ('dataset', args.dataset),
     ])
 
     run_config = OrderedDict([
@@ -315,6 +340,8 @@ def main():
 
     run_config = config['run_config']
     optim_config = config['optim_config']
+    data_config = config['data_config']
+    model_config = config['model_config']
 
     # set random seed
     seed = run_config['seed']
@@ -336,9 +363,8 @@ def main():
         json.dump(config, fout, indent=2)
 
     # data loaders
-    train_loader, test_loader = get_loader(optim_config['batch_size'],
-                                           run_config['num_workers'],
-                                           run_config['device'] != 'cpu')
+    train_loader, test_loader = get_loader(run_config,model_config,
+                                           optim_config,data_config)
 
     # model
     model = load_model(config['model_config'])

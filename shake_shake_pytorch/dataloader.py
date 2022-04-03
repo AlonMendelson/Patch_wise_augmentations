@@ -6,50 +6,60 @@ from util.auto_aug import auto_aug
 from util.cutout import Cutout
 
 
-def get_loader(batch_size, num_workers, use_gpu):
-    mean = np.array([0.4914, 0.4822, 0.4465])
-    std = np.array([0.2470, 0.2435, 0.2616])
-    auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.CIFAR10)
+def get_loader(run_config,model_config, optim_config,data_config):
 
     train_transform = torchvision.transforms.Compose([
         torchvision.transforms.RandomCrop(32, padding=4),
         torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.ToTensor(),
-        auto_aug(auto_augment),
-        #Patchwise_aug(True, False, 0.2, 0, 8),
-        Cutout(1,16)
-        #torchvision.transforms.Normalize(mean, std),
-
+        torchvision.transforms.ToTensor()
     ])
+    if model_config['auto_augmentation']:
+        auto_augment = torchvision.transforms.AutoAugment(policy=torchvision.transforms.AutoAugmentPolicy.CIFAR10)
+        train_transform.transforms.append(auto_aug(auto_augment))
+
+    if model_config['patch_permutation'] or model_config['patch_transforms']:
+        train_transform.transforms.append(
+            Patchwise_aug(model_config['patch_permutation'], model_config['patch_transforms'], model_config['permutation_prob']
+                          , model_config['transform_prob'], model_config['patch_length']))
     test_transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
-        #torchvision.transforms.Normalize(mean, std),
     ])
 
     dataset_dir = 'data/'
-    train_dataset = torchvision.datasets.CIFAR100(dataset_dir,
-                                                 train=True,
-                                                 transform=train_transform,
-                                                 download=True)
-    test_dataset = torchvision.datasets.CIFAR100(dataset_dir,
-                                                train=False,
-                                                transform=test_transform,
-                                                download=True)
+    if data_config['dataset'] == 'CIFAR10':
+        train_dataset = torchvision.datasets.CIFAR10(dataset_dir,
+                                                      train=True,
+                                                      transform=train_transform,
+                                                      download=True)
+        test_dataset = torchvision.datasets.CIFAR10(dataset_dir,
+                                                     train=False,
+                                                     transform=test_transform,
+                                                     download=True)
+    else:
+        train_dataset = torchvision.datasets.CIFAR100(dataset_dir,
+                                                      train=True,
+                                                      transform=train_transform,
+                                                      download=True)
+        test_dataset = torchvision.datasets.CIFAR100(dataset_dir,
+                                                     train=False,
+                                                     transform=test_transform,
+                                                     download=True)
+
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=batch_size,
+        batch_size=optim_config['batch_size'],
         shuffle=True,
-        num_workers=num_workers,
-        pin_memory=use_gpu,
+        num_workers=run_config['num_workers'],
+        pin_memory=run_config['device'] != 'cpu',
         drop_last=True,
     )
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=batch_size,
-        num_workers=num_workers,
+        batch_size=optim_config['batch_size'],
+        num_workers=run_config['num_workers'],
         shuffle=False,
-        pin_memory=use_gpu,
+        pin_memory=run_config['device'] != 'cpu',
         drop_last=False,
     )
     return train_loader, test_loader
