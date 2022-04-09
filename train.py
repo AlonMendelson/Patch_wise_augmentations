@@ -22,6 +22,8 @@ from util.auto_aug import auto_aug
 
 from model.resnet import ResNet18
 from model.wide_resnet import WideResNet
+import os.path
+from os import path
 
 
 
@@ -171,6 +173,8 @@ if __name__ == "__main__":
     scheduler = MultiStepLR(cnn_optimizer, milestones=[60, 120, 160], gamma=0.2)
 
     filename = 'logs/' + test_id + '.csv'
+    if not path.exists('logs'):
+        os.mkdir('logs')
     csv_logger = CSVLogger(args=args, fieldnames=['epoch', 'train_acc', 'test_acc'], filename=filename)
     max_test_acc = 0
     for epoch in range(args.epochs):
